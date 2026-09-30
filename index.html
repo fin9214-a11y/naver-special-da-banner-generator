@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>네이버 메인 스페셜 DA 배너 생성기</title>
+  <!-- 폰트 로드 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <!-- 이미지 저장 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f8f9fa;
+      padding: 30px;
+      display: flex;
+      gap: 30px;
+      color: #333;
+    }
+
+    /* --- 좌측 제어 패널 --- */
+    .controls {
+      width: 480px;
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      height: 90vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .controls h1 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #111;
+      border-bottom: 2px solid #03C75A;
+      padding-bottom: 10px;
+    }
+
+    /* 필수 가이드 안내 박스 */
+    .guide-box {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .guide-box h3 {
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .guide-box ul {
+      list-style: none;
+      font-size: 12px;
+      color: #166534;
+      line-height: 1.6;
+    }
+    .guide-box li {
+      margin-bottom: 4px;
+    }
+    .guide-box li::before {
+      content: '✓';
+      margin-right: 6px;
+      font-weight: bold;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #444;
+    }
+    .guide-text {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dcdcdc;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; height: 60px; }
+    .char-count {
+      text-align: right;
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .char-count.warning { color: #e74c3c; font-weight: bold; }
+    .radio-group { display: flex; gap: 16px; font-size: 13px; }
+    .radio-group label { font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+    .btn-download {
+      width: 100%;
+      padding: 16px;
+      background-color: #03C75A;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-download:hover { background-color: #02b04f; }
+
+    /* --- 우측 미리보기 패널 --- */
+    .preview-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #555;
+    }
+
+    /* 배너 캔버스 (정확한 720x280 규격) */
+    #banner-wrapper {
+      display: inline-block;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    #banner {
+      width: 720px;
+      height: 280px;
+      background-color: #EBEDF2;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 오브제 영역 (좌측 고정) */
+    #object-wrapper {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 30px;
+    }
+    .obj-nukki {
+      width: 260px;
+      height: 280px;
+    }
+    .obj-nukki img {
+      max-width: 100%;
+      max-height: 85%;
+      object-fit: contain;
+    }
+    .obj-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 40px;
+      overflow: hidden;
+    }
+    .obj-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 텍스트 & 아이콘 감싸는 래퍼 */
+    .content-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* 텍스트 컨테이너 */
+    .text-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px; /* 카피 간의 간격 */
+    }
+    .order-sub-first {
+      flex-direction: column-reverse; /* 서브(위), 메인(아래) 배치 */
+    }
+
+    .main-copy {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.35;
+      letter-spacing: -1px;
+      word-break: keep-all;
+      color: #222222;
+    }
+    .sub-copy {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.4;
+      letter-spacing: -0.5px;
+      word-break: keep-all;
+      color: #666666;
+    }
+
+    /* 레퍼런스 스타일 원형 화살표 아이콘 */
+    .arrow-icon {
+      width: 48px;
+      height: 48px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      flex-shrink: 0;
+      margin-left: 20px;
+    }
+    .arrow-icon::after {
+      content: '';
+      width: 12px;
+      height: 12px;
+      border-top: 3px solid #b5b5b5;
+      border-right: 3px solid #b5b5b5;
+      transform: rotate(45deg);
+      margin-right: 4px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- 좌측 설정 영역 -->
+  <div class="controls">
+    <h1>네이버 배너 생성기</h1>
+
+    <!-- 사용자 필독: 스페셜 DA 제작 가이드 요약 -->
+    <div class="guide-box">
+      <h3>📢 [필독] 스페셜 DA 제작 가이드</h3>
+      <ul>
+        <li><strong>이미지 규격:</strong> 720 x 280 px (배경색: #EBEDF2 고정)</li>
+        <li><strong>오브제 (좌측 고정):</strong><br>
+            - 누끼형: 이미지가 테두리에 닿지 않게 여백을 충분히 두세요.<br>
+            - 원형: 200x200px (1:1 비율로 꽉 차게 들어갑니다.)</li>
+        <li><strong>메인 카피:</strong> 최대 2줄 / 공백 제외 20자 (초과 시 입력 불가)</li>
+        <li><strong>서브 카피:</strong> 최대 1줄 / 공백 제외 10자 (초과 시 입력 불가)</li>
+      </ul>
+    </div>
+
+    <div class="form-group">
+      <label>1. 디자인 오브제 (이미지 업로드)</label>
+      <input type="file" id="img-input" accept="image/*">
+    </div>
+
+    <div class="form-group">
+      <label>오브제 스타일 설정</label>
+      <div class="radio-group">
+        <label><input type="radio" name="objType" value="nukki" checked> 누끼형 (여백 포함)</label>
+        <label><input type="radio" name="objType" value="circle"> 원형 (1:1 비율)</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>2. 카피 상하 배치 순서</label>
+      <div class="radio-group">
+        <label><input type="radio" name="copyOrder" value="main-sub" checked> 메인(위) / 서브(아래)</label>
+        <label><input type="radio" name="copyOrder" value="sub-main"> 서브(위) / 메인(아래)</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>3. 메인 카피 (최대 2줄)</label>
+      <div class="guide-text">32pt (볼드) / 공백 제외 20자 이내</div>
+      <textarea id="main-copy-input" placeholder="H패션몰, 컬래버레이션">H패션몰, 컬래버레이션</textarea>
+      <div id="main-count" class="char-count">공백 제외: 0 / 20자</div>
+    </div>
+
+    <div class="form-group">
+      <label>4. 서브 카피 (1줄)</label>
+      <div class="guide-text">25pt (일반) / 공백 제외 10자 이내</div>
+      <input type="text" id="sub-copy-input" value="최대 44% 쿠폰 지급!">
+      <div id="sub-count" class="char-count">공백 제외: 0 / 10자</div>
+    </div>
+
+    <button type="button" class="btn-download" id="download-btn">가이드 규격(720x280) 다운로드</button>
+  </div>
+
+  <!-- 우측 미리보기 영역 -->
+  <div class="preview-container">
+    <div class="preview-title">실시간 배너 미리보기</div>
+
+    <div id="banner-wrapper">
+      <div id="banner">
+        <!-- 1. 오브제 (좌측 고정) -->
+        <div id="object-wrapper" class="obj-nukki">
+          <img id="banner-img" src="https://via.placeholder.com/260x280/EBEDF2/999999?text=Object+Image" alt="오브제">
+        </div>
+
+        <!-- 2. 텍스트 및 우측 화살표 -->
+        <div class="content-wrapper">
+          <div id="text-wrapper" class="text-container">
+            <div id="banner-main-copy" class="main-copy">H패션몰, 컬래버레이션</div>
+            <div id="banner-sub-copy" class="sub-copy">최대 44% 쿠폰 지급!</div>
+          </div>
+          <div class="arrow-icon"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const banner = document.getElementById('banner');
+    const objectWrapper = document.getElementById('object-wrapper');
+    const bannerImg = document.getElementById('banner-img');
+    const textWrapper = document.getElementById('text-wrapper');
+    const bannerMainCopy = document.getElementById('banner-main-copy');
+    const bannerSubCopy = document.getElementById('banner-sub-copy');
+
+    const imgInput = document.getElementById('img-input');
+    const mainInput = document.getElementById('main-copy-input');
+    const subInput = document.getElementById('sub-copy-input');
+
+    const mainCount = document.getElementById('main-count');
+    const subCount = document.getElementById('sub-count');
+
+    // 마지막으로 유효했던 텍스트 값을 저장할 변수
+    let lastValidMain = mainInput.value;
+    let lastValidSub = subInput.value;
+
+    // 공백을 제외한 글자 수 계산 함수
+    function getNoSpaceLength(str) {
+      return str.replace(/\s+/g, '').length;
+    }
+
+    // 이미지 업로드 처리
+    imgInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          bannerImg.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // 오브제 스타일(누끼/원형) 변경
+    document.querySelectorAll('input[name="objType"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        objectWrapper.className = e.target.value === 'nukki' ? 'obj-nukki' : 'obj-circle';
+      });
+    });
+
+    // 카피 상하 배치 순서 변경
+    document.querySelectorAll('input[name="copyOrder"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value === 'sub-main') {
+          textWrapper.classList.add('order-sub-first');
+        } else {
+          textWrapper.classList.remove('order-sub-first');
+        }
+      });
+    });
+
+    // 메인 카피 입력 처리 (글자수 제한 차단 로직 포함)
+    mainInput.addEventListener('input', (e) => {
+      const currentLen = getNoSpaceLength(mainInput.value);
+      if (currentLen > 20) {
+        alert("메인 카피는 공백 제외 20자까지만 입력 가능합니다.");
+        mainInput.value = lastValidMain; // 제한을 넘으면 이전 텍스트로 되돌림
+      } else {
+        lastValidMain = mainInput.value; // 통과하면 마지막 유효 텍스트 업데이트
+      }
+      updateText();
+    });
+
+    // 서브 카피 입력 처리 (글자수 제한 차단 로직 포함)
+    subInput.addEventListener('input', (e) => {
+      const currentLen = getNoSpaceLength(subInput.value);
+      if (currentLen > 10) {
+        alert("서브 카피는 공백 제외 10자까지만 입력 가능합니다.");
+        subInput.value = lastValidSub; // 제한을 넘으면 이전 텍스트로 되돌림
+      } else {
+        lastValidSub = subInput.value; // 통과하면 마지막 유효 텍스트 업데이트
+      }
+      updateText();
+    });
+
+    // 미리보기 및 글자 수 카운터 업데이트
+    function updateText() {
+      // 메인 카피 반영
+      const mainText = mainInput.value;
+      bannerMainCopy.innerHTML = mainText.replace(/\n/g, '<br>');
+      mainCount.textContent = `공백 제외: ${getNoSpaceLength(mainText)} / 20자`;
+
+      // 서브 카피 반영
+      const subText = subInput.value;
+      bannerSubCopy.textContent = subText;
+      subCount.textContent = `공백 제외: ${getNoSpaceLength(subText)} / 10자`;
+    }
+
+    // 캔버스 이미지 다운로드
+    document.getElementById('download-btn').addEventListener('click', () => {
+      html2canvas(banner, {
+        width: 720,
+        height: 280,
+        scale: 1,
+        useCORS: true,
+        backgroundColor: '#EBEDF2'
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'naver_special_da_banner.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    });
+
+    // 초기 실행
+    updateText();
+  </script>
+</body>
+</html>
